@@ -181,7 +181,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSApp.activate(ignoringOtherApps: true)
         NSApp.orderFrontStandardAboutPanel(options: [
             .credits: NSAttributedString(
-                string: "Touch screen and pen support for macOS.\nOpen source under the MIT License.",
+                string: "Touch screen and pen support for macOS.\nOpen source under the MIT License.\nCallido B.V. · callido.nl · callido.dev",
                 attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor]),
         ])
     }

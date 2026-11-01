@@ -17,6 +17,10 @@
   <a href="LICENSE">MIT License</a>
 </p>
 
+<p align="center">
+  A <a href="https://callido.nl">Callido</a> open-source project · <a href="https://callido.dev">callido.dev</a>
+</p>
+
 ---
 
 macOS has no built-in support for touch screens. Plug in a portable touch monitor and the picture works,
@@ -169,7 +173,7 @@ has to pass. Run `swift test` before opening one. Releases are described in [doc
 
 ## License and notice
 
-[MIT](LICENSE) © 2026 Callido B.V.
+[MIT](LICENSE) © 2026 [Callido B.V.](https://callido.nl) · More open-source tools at [callido.dev](https://callido.dev).
 
 Callido Touch is an independent project. It is not affiliated with, endorsed by or sponsored by any
 hardware maker. Lenovo and ThinkVision are trademarks of Lenovo; other product names are trademarks of their

@@ -26,6 +26,10 @@ The first release under the Callido name (previously developed as OpenTouch).
 
 Coming from OpenTouch? Quit and delete `OpenTouch.app` first, and remove its entries under Input Monitoring and Accessibility; Callido Touch is a new app to macOS and asks again.
 
+## About
+
+Callido Touch is made by [Callido](https://callido.nl). More open-source tools at [callido.dev](https://callido.dev).
+
 ## Notice
 
 Not affiliated with any hardware maker. Product names are trademarks of their owners and are used only to describe compatibility. MIT licensed.
