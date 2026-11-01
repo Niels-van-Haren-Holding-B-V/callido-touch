@@ -13,7 +13,7 @@
    `CallidoTouch.dmg` and `CallidoTouch.zip`, writes `SHA256SUMS`, signs it (`SHA256SUMS.sig`), verifies the
    signature with `scripts/verify-release.sh` and publishes the GitHub Release. The version number comes from the tag.
 
-`main` is protected by the `main` ruleset: no deletion or force push, changes through a pull request, and the
+`main` is protected by the `pr` ruleset (same rules as Callido Restore): no deletion or force push, changes through a pull request, and the
 checks `private-check`, `test` and `build` must pass.
 
 ## Secrets
