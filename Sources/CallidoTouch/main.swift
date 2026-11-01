@@ -1,7 +1,7 @@
 import AppKit
-import OpenTouchCore
+import CallidoTouchCore
 
-// `OpenTouch --dump` prints what the touch screen sends without moving the pointer.
+// `CallidoTouch --dump` prints what the touch screen sends without moving the pointer.
 // Its output is what to attach when reporting an unsupported device.
 if CommandLine.arguments.contains("--dump") {
     let hid = HIDService(seize: !CommandLine.arguments.contains("--no-seize"))

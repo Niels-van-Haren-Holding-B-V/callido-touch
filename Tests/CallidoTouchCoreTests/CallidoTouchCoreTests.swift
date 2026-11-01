@@ -1,5 +1,5 @@
 import Testing
-@testable import OpenTouchCore
+@testable import CallidoTouchCore
 
 /// A typical Windows-compatible descriptor: a two-finger hybrid-mode touch screen
 /// (report 1), its configuration collection (report 3) and an active pen (report 4).

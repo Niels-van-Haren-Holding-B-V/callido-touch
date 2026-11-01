@@ -1,13 +1,16 @@
 import AppKit
 import ApplicationServices
 import IOKit.hid
-import OpenTouchCore
+import CallidoTouchCore
 import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let controller = TouchController()
     private var statusItem: NSStatusItem!
     private let defaults = UserDefaults.standard
+    private lazy var setup = SetupWindowController { [weak self] in
+        self?.controller.hid.devices.map(\.name) ?? []
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         defaults.register(defaults: [
@@ -17,7 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         applyDefaults()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "hand.point.up.left", accessibilityDescription: "OpenTouch")
+        statusItem.button?.image = NSImage(systemSymbolName: "hand.tap", accessibilityDescription: "Callido Touch")
         let menu = NSMenu()
         menu.delegate = self
         statusItem.menu = menu
@@ -28,9 +31,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         controller.hid.onDevicesChanged = { [weak self] in self?.updateIcon() }
         controller.start()
 
-        if !AXIsProcessTrusted() { promptForAccessibility() }
         enableOpenAtLoginOnFirstInstall()
         updateIcon()
+
+        // First launch, or a permission went missing (e.g. after an update): show what is needed.
+        if !defaults.bool(forKey: "setupShown") || !SetupModel.allGranted {
+            defaults.set(true, forKey: "setupShown")
+            setup.show()
+        }
     }
 
     /// A touch screen should work right after logging in, so the first launch from
@@ -87,6 +95,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(.separator())
             menu.addItem(action: "Grant Accessibility Permission…", #selector(openAccessibility), target: self)
         }
+        if !SetupModel.hasInputMonitoring {
+            if AXIsProcessTrusted() { menu.addItem(.separator()) }
+            menu.addItem(action: "Grant Input Monitoring Permission…", #selector(showSetup), target: self)
+        }
 
         menu.addItem(.separator())
         menu.addItem(toggle: "Enabled", key: "enabled", target: self)
@@ -122,9 +134,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         let login = menu.addItem(action: "Open at Login", #selector(toggleLogin(_:)), target: self)
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
-        menu.addItem(action: "OpenTouch on GitHub", #selector(openGitHub), target: self)
+        menu.addItem(action: "Setup…", #selector(showSetup), target: self)
+        menu.addItem(action: "About Callido Touch", #selector(showAbout), target: self)
+        menu.addItem(action: "Callido Touch on GitHub", #selector(openGitHub), target: self)
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit OpenTouch", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "Quit Callido Touch", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
 
     @objc func toggleDefault(_ sender: NSMenuItem) {
@@ -159,8 +173,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
     }
 
+    @objc func showSetup() {
+        setup.show()
+    }
+
+    @objc func showAbout() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(options: [
+            .credits: NSAttributedString(
+                string: "Touch screen and pen support for macOS.\nOpen source under the MIT License.",
+                attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor]),
+        ])
+    }
+
     @objc func openGitHub() {
-        NSWorkspace.shared.open(URL(string: "https://github.com/nielsvanharen/opentouch")!)
+        NSWorkspace.shared.open(URL(string: "https://github.com/Niels-van-Haren-Holding-B-V/callido-touch")!)
     }
 }
 

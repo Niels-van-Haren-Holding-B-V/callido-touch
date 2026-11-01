@@ -1,5 +1,5 @@
 import CoreGraphics
-import OpenTouchCore
+import CallidoTouchCore
 
 /// Turns gestures into synthetic mouse, scroll and tablet events.
 /// Posting requires the Accessibility permission.

@@ -1,6 +1,6 @@
 import AppKit
 import ApplicationServices
-import OpenTouchCore
+import CallidoTouchCore
 
 // An on-screen keyboard that pops up on the touch display when a text field is tapped.
 //

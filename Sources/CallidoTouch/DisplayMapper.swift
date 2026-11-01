@@ -1,5 +1,5 @@
 import AppKit
-import OpenTouchCore
+import CallidoTouchCore
 
 /// Identifies a display across reconnects and reboots.
 struct DisplayIdentity: Codable, Equatable {

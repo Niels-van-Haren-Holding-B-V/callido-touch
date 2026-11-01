@@ -1,0 +1,113 @@
+name: build
+on:
+  push: { branches: [main], tags: ['v*'] }
+  pull_request:
+  workflow_dispatch:
+
+# Pull requests stay read-only. Only the publish job, on a v* tag, can write.
+permissions:
+  contents: read
+
+jobs:
+  # The repo is public: fail on local paths, private IPs or e-mail addresses in tracked files.
+  private-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - run: ./scripts/check-private.sh
+        env:
+          PRIVATE_DENYLIST: ${{ secrets.PRIVATE_DENYLIST }}
+
+  test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - run: swift test
+
+  build:
+    runs-on: macos-15
+    env:
+      UNIVERSAL: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0          # git describe needs the tags for the version number
+      # Code signing (docs/RELEASING.md): the stable "Callido Touch Signing" certificate keeps the macOS
+      # Accessibility and Input Monitoring permissions valid across updates. Without the secrets (forks) the
+      # build is signed ad hoc.
+      - name: Import the signing certificate
+        env:
+          MACOS_SIGNING_P12: ${{ secrets.MACOS_SIGNING_P12 }}
+          MACOS_SIGNING_CERT: ${{ secrets.MACOS_SIGNING_CERT }}
+          MACOS_SIGNING_PASSWORD: ${{ secrets.MACOS_SIGNING_PASSWORD }}
+        run: |
+          if [ -z "$MACOS_SIGNING_P12" ]; then echo "::warning::MACOS_SIGNING_P12 is not set: signing ad hoc"; exit 0; fi
+          KC="$RUNNER_TEMP/signing.keychain-db"; KP=$(openssl rand -hex 16)
+          printf '%s' "$MACOS_SIGNING_P12" | base64 --decode > "$RUNNER_TEMP/signing.p12"
+          printf '%s\n' "$MACOS_SIGNING_CERT" > "$RUNNER_TEMP/signing.crt"
+          security create-keychain -p "$KP" "$KC"
+          security set-keychain-settings -lut 3600 "$KC"
+          security unlock-keychain -p "$KP" "$KC"
+          security import "$RUNNER_TEMP/signing.p12" -k "$KC" -P "$MACOS_SIGNING_PASSWORD" -T /usr/bin/codesign >/dev/null
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KP" "$KC" >/dev/null
+          # The certificate is self-signed: trust it for code signing on this throwaway runner only.
+          sudo security add-trusted-cert -d -r trustRoot -p codeSign -k "$KC" "$RUNNER_TEMP/signing.crt"
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/signing.p12"
+          security find-identity -v -p codesigning "$KC"
+          ID=$(security find-identity -v -p codesigning "$KC" | awk '/Callido Touch Signing/ {print $2; exit}')
+          [ -n "$ID" ] || { echo "::error::signing identity is not usable"; exit 1; }
+          { echo "SIGN_IDENTITY=$ID"; echo "SIGN_KEYCHAIN=$KC"; } >> "$GITHUB_ENV"
+      - run: scripts/build-app.sh
+      - run: scripts/smoke-app.sh
+      - name: Package
+        run: |
+          scripts/make-dmg.sh build/CallidoTouch.dmg
+          ditto -c -k --keepParent "build/Callido Touch.app" build/CallidoTouch.zip
+      - name: Remove the signing keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2>/dev/null || true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: CallidoTouch
+          path: |
+            build/CallidoTouch.dmg
+            build/CallidoTouch.zip
+
+  publish:
+    needs: [private-check, test, build]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: CallidoTouch
+          path: release
+      - run: scripts/assemble-release.sh release
+      # Release signing (docs/RELEASING.md): SHA256SUMS is signed with the Ed25519 key in the secret
+      # RELEASE_SIGNING_KEY. The tag is part of the signed data, so an old signed list cannot pass for a newer release.
+      - name: Sign SHA256SUMS
+        env:
+          RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+        run: |
+          if [ -z "$RELEASE_SIGNING_KEY" ]; then echo "::error::RELEASE_SIGNING_KEY is not set"; exit 1; fi
+          OPENSSL="$(brew --prefix openssl@3)/bin/openssl"
+          umask 077; printf '%s\n' "$RELEASE_SIGNING_KEY" > "$RUNNER_TEMP/release-signing.pem"
+          { printf 'callido-touch %s\n' "$GITHUB_REF_NAME"; cat release/SHA256SUMS; } > "$RUNNER_TEMP/signed-message"
+          "$OPENSSL" pkeyutl -sign -rawin -inkey "$RUNNER_TEMP/release-signing.pem" -in "$RUNNER_TEMP/signed-message" -out release/SHA256SUMS.sig
+          rm -f "$RUNNER_TEMP/release-signing.pem"
+      # Check it the way a user would, against the public key committed in scripts/verify-release.sh.
+      - run: scripts/verify-release.sh "$GITHUB_REF_NAME" release
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          name: Callido Touch ${{ github.ref_name }}
+          body_path: .github/RELEASE_NOTES.md
+          fail_on_unmatched_files: true
+          files: |
+            release/CallidoTouch.dmg
+            release/CallidoTouch.zip
+            release/SHA256SUMS
+            release/SHA256SUMS.sig

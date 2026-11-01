@@ -1,6 +1,6 @@
 import Foundation
 import IOKit.hid
-import OpenTouchCore
+import CallidoTouchCore
 
 /// One connected digitizer interface (a USB touch screen often exposes several).
 final class DigitizerDevice {
@@ -151,6 +151,6 @@ final class HIDService {
 
 enum Log {
     static func info(_ message: String) {
-        FileHandle.standardError.write(Data(("[OpenTouch] " + message + "\n").utf8))
+        FileHandle.standardError.write(Data(("[CallidoTouch] " + message + "\n").utf8))
     }
 }

@@ -3,24 +3,28 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleExecutable</key>
-	<string>OpenTouch</string>
+	<string>CallidoTouch</string>
 	<key>CFBundleIdentifier</key>
-	<string>io.github.nielsvanharen.opentouch</string>
+	<string>nl.callido.touch</string>
 	<key>CFBundleName</key>
-	<string>OpenTouch</string>
+	<string>Callido Touch</string>
 	<key>CFBundleDisplayName</key>
-	<string>OpenTouch</string>
+	<string>Callido Touch</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>__VERSION__</string>
 	<key>CFBundleVersion</key>
 	<string>__VERSION__</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0</string>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>MIT License</string>
+	<string>© 2026 Callido B.V. · MIT License</string>
 </dict>
 </plist>

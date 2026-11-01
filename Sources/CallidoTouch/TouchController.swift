@@ -1,5 +1,5 @@
 import Foundation
-import OpenTouchCore
+import CallidoTouchCore
 
 /// Routes decoded digitizer events through display mapping and gesture recognition.
 final class TouchController {
